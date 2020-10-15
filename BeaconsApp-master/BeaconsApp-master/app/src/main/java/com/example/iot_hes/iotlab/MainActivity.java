@@ -4,6 +4,7 @@ package com.example.iot_hes.iotlab;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -16,7 +17,16 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 // import java.io.Console;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -81,6 +91,8 @@ public class MainActivity extends AppCompatActivity {
                     2);
         }
 
+
+
         PositionText   =  findViewById(R.id.PositionText);
         Percentage     =  findViewById(R.id.Percentage);
         IncrButton     =  findViewById(R.id.IncrButton);
@@ -104,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
         region = new BeaconRegion(TAG, UUID.fromString("B9407F30-F5F8-466E-AFF9-25556B57FE6D"),
                                   null,    // major -- for the students it should be the assigned one 17644
                                   null      // minor
-                                  );
+                                  ); // Major :  Minor :
         beaconManager = new BeaconManager(this);
         // beaconManager = new BeaconManager(getApplicationContext());
 
@@ -161,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
 
             public void onClick(View v) {
                 // TODO Send HTTP Request to command light
-                Log.d(TAG, Percentage.getText().toString());
+                Log.d(TAG, "Commande the light at : " + Percentage.getText().toString());
             }
         });
 
@@ -172,7 +184,13 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
 
                 // TODO Send HTTP Request to command store
-                Log.d(TAG, Percentage.getText().toString());
+                Log.d(TAG, "Commande the store at : " + Percentage.getText().toString());
+
+                // Task for make request in background
+                String url = "https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol";
+                new RequestInBackGround().execute(url);
+
+
             }
         });
 
@@ -183,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
 
                 // TODO Send HTTP Request to command radiator
-                Log.d(TAG, Percentage.getText().toString());
+                Log.d(TAG, "Commande the radiator at : " + Percentage.getText().toString());
             }
         });
 
@@ -218,6 +236,70 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private class RequestInBackGround extends AsyncTask<String, Void, Void> {
+        String result;
+        @Override
+        protected Void doInBackground(String... urls) {
+            Log.d(TAG, "------- >  doInBackground :" );
+
+            if (urls[0] != null && urls[0] != "")
+                Log.d(TAG, urls[0]);
+            else {
+                Log.d(TAG, "Url not correct ! ");
+                return null;
+            }
+
+            URL url ;
+
+            try {
+                url = new URL(urls[0]);
+                HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+                conn.setReadTimeout(20000 ); // milli
+                conn.setConnectTimeout(15000 ); // milli
+                conn.setRequestMethod("GET");
+                conn.setDoInput(true);
+                conn.setDoOutput(true);
+                conn.connect();
+
+                System.out.println(conn.getResponseCode());
+                InputStream is = conn.getInputStream();
+                Reader reader = new InputStreamReader(is, "UTF-8");
+                char[] buffer = new char[500];
+                reader.read(buffer);
+                System.out.println(new String(buffer));
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (ProtocolException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            /*
+            try {
+                url = new URL(urls[0]);
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(url.openStream()));
+                String stringBuffer;
+                String string = "";
+                while ((stringBuffer = bufferedReader.readLine()) != null){
+                    string = String.format("%s%s", string, stringBuffer);
+                }
+                bufferedReader.close();
+                result = string;
+            } catch (IOException e){
+                e.printStackTrace();
+                result = e.toString();
+            }
+
+             */
+            return null;
+        }
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            Log.d(TAG, "------- >  Request Finished");
+
+            super.onPostExecute(aVoid);
+        }
+    }
 }
 
 
@@ -249,4 +331,9 @@ class InputFilterMinMax implements InputFilter {
     private boolean isInRange(int a, int b, int c) {
         return b > a ? c >= a && c <= b : c >= b && c <= a;
     }
+
+
+
 }
+
+
